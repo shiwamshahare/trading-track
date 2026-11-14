@@ -23,6 +23,9 @@ import { DeleteAlertModal } from '../components/DeleteAlertModal';
 interface Props {
   records: DailyRecordsMap;
   currency: CurrencyType;
+  selectedYear?: number;
+  selectedMonth?: number;
+  onChangeMonth?: (year: number, month: number) => void;
   onSaveRecord: (record: DailyTradeRecord) => void;
   onDeleteRecord: (dateKey: string) => void;
   onShowToast: (msg: string) => void;
@@ -31,13 +34,19 @@ interface Props {
 export const DashboardScreen: React.FC<Props> = ({
   records,
   currency,
+  selectedYear: propYear,
+  selectedMonth: propMonth,
+  onChangeMonth,
   onSaveRecord,
   onDeleteRecord,
   onShowToast,
 }) => {
   const now = new Date();
-  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1); // 1-12
+  const [internalYear, setInternalYear] = useState<number>(now.getFullYear());
+  const [internalMonth, setInternalMonth] = useState<number>(now.getMonth() + 1); // 1-12
+
+  const selectedYear = propYear ?? internalYear;
+  const selectedMonth = propMonth ?? internalMonth;
 
   const todayDateKey = formatDateKey(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
@@ -51,24 +60,31 @@ export const DashboardScreen: React.FC<Props> = ({
   const [activeRecord, setActiveRecord] = useState<DailyTradeRecord | undefined>(undefined);
   const [pendingDeleteKey, setPendingDeleteKey] = useState<string | null>(null);
 
+  const updateYearMonth = (newY: number, newM: number) => {
+    if (onChangeMonth) {
+      onChangeMonth(newY, newM);
+    } else {
+      setInternalYear(newY);
+      setInternalMonth(newM);
+    }
+  };
+
   // Month navigation
   const handlePrevMonth = () => {
     haptic.selection();
     if (selectedMonth === 1) {
-      setSelectedMonth(12);
-      setSelectedYear((prev) => prev - 1);
+      updateYearMonth(selectedYear - 1, 12);
     } else {
-      setSelectedMonth((prev) => prev - 1);
+      updateYearMonth(selectedYear, selectedMonth - 1);
     }
   };
 
   const handleNextMonth = () => {
     haptic.selection();
     if (selectedMonth === 12) {
-      setSelectedMonth(1);
-      setSelectedYear((prev) => prev + 1);
+      updateYearMonth(selectedYear + 1, 1);
     } else {
-      setSelectedMonth((prev) => prev + 1);
+      updateYearMonth(selectedYear, selectedMonth + 1);
     }
   };
 
@@ -113,19 +129,90 @@ export const DashboardScreen: React.FC<Props> = ({
             <DashboardBrandLogo size={36} />
             <View>
               <Text style={globalStyles.appSubtitle}>TRADING TRACK</Text>
-              <View style={globalStyles.appTitleRow}>
-                <TouchableOpacity onPress={handlePrevMonth} style={{ padding: 2 }}>
-                  <ChevronLeft size={18} color={THEME.colors.textMuted} />
-                </TouchableOpacity>
-                <Text style={globalStyles.appTitle}>
-                  {getMonthName(selectedMonth)} {selectedYear}
-                </Text>
-                <TouchableOpacity onPress={handleNextMonth} style={{ padding: 2 }}>
-                  <ChevronRight size={18} color={THEME.colors.textMuted} />
-                </TouchableOpacity>
-              </View>
+              <Text style={{ fontFamily: THEME.fonts.semiBold, fontSize: 13, color: THEME.colors.textWhite }}>
+                Performance Journal
+              </Text>
             </View>
           </View>
+
+          {/* Quick jump to Current Month button if browsing archives */}
+          {!isCurrentMonth && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                haptic.selection();
+                updateYearMonth(now.getFullYear(), now.getMonth() + 1);
+                onShowToast(`Returned to ${getMonthName(now.getMonth() + 1)} ${now.getFullYear()}`);
+              }}
+              style={{
+                backgroundColor: THEME.colors.tileToday,
+                borderColor: THEME.colors.tileTodayBorder,
+                borderWidth: 1.5,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: THEME.radius.full,
+              }}
+            >
+              <Text style={{ fontFamily: THEME.fonts.bold, fontSize: 11, color: THEME.colors.textToday }}>
+                Jump to Today
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Prominent High-Visibility Month Switcher */}
+        <View style={globalStyles.monthSwitcherCard}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handlePrevMonth}
+            style={globalStyles.monthArrowBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <ChevronLeft size={24} color={THEME.colors.textWhite} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              if (!isCurrentMonth) {
+                haptic.selection();
+                updateYearMonth(now.getFullYear(), now.getMonth() + 1);
+                onShowToast(`Returned to ${getMonthName(now.getMonth() + 1)} ${now.getFullYear()}`);
+              }
+            }}
+            style={globalStyles.monthDisplayCenter}
+          >
+            <Text style={globalStyles.monthDisplayTitle}>
+              {getMonthName(selectedMonth)} {selectedYear}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+              <View
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: 3.5,
+                  backgroundColor: isCurrentMonth ? THEME.colors.textProfit : THEME.colors.textToday,
+                }}
+              />
+              <Text
+                style={[
+                  globalStyles.monthDisplaySub,
+                  isCurrentMonth ? { color: THEME.colors.textProfit } : { color: THEME.colors.textToday },
+                ]}
+              >
+                {isCurrentMonth ? 'CURRENT MONTH' : 'TAP TO RETURN'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleNextMonth}
+            style={globalStyles.monthArrowBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <ChevronRight size={24} color={THEME.colors.textWhite} />
+          </TouchableOpacity>
         </View>
 
         {/* 3 Metrics Cards */}

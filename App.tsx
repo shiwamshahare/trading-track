@@ -24,6 +24,7 @@ import { AuthService } from './src/services/authService';
 import { AutoBackupService } from './src/services/autoBackupService';
 import { UpdateService } from './src/services/updateService';
 import { haptic } from './src/utils/haptics';
+import { getMonthName } from './src/utils/formatters';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { YearViewScreen } from './src/screens/YearViewScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
@@ -36,6 +37,10 @@ export default function App() {
     Poppins_600SemiBold,
     Poppins_700Bold,
   });
+
+  const now = new Date();
+  const [dashboardYear, setDashboardYear] = useState<number>(now.getFullYear());
+  const [dashboardMonth, setDashboardMonth] = useState<number>(now.getMonth() + 1);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [records, setRecords] = useState<DailyRecordsMap>({});
@@ -167,6 +172,12 @@ export default function App() {
           <DashboardScreen
             records={records}
             currency={currency}
+            selectedYear={dashboardYear}
+            selectedMonth={dashboardMonth}
+            onChangeMonth={(year, month) => {
+              setDashboardYear(year);
+              setDashboardMonth(month);
+            }}
             onSaveRecord={handleSaveRecord}
             onDeleteRecord={handleDeleteRecord}
             onShowToast={showToast}
@@ -177,9 +188,13 @@ export default function App() {
           <YearViewScreen
             records={records}
             currency={currency}
-            onSelectMonth={() => {
+            onSelectMonth={(year, month) => {
+              setDashboardYear(year);
+              setDashboardMonth(month);
               setActiveTab('dashboard');
+              showToast(`📅 Jumped to ${getMonthName(month)} ${year}`);
             }}
+            onShowToast={showToast}
           />
         )}
 

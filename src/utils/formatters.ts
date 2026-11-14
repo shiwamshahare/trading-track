@@ -1,4 +1,4 @@
-import { DailyRecordsMap, WeekStats, MonthSummaryStats, CurrencyType } from '../types';
+import { DailyRecordsMap, WeekStats, MonthSummaryStats, QuarterStats, CurrencyType } from '../types';
 
 export function formatCompactCurrency(amount: number, currency: CurrencyType = '₹'): string {
   if (amount === 0) return `${currency}0.0`;
@@ -136,6 +136,8 @@ export function calculateWeeksForMonth(records: DailyRecordsMap, year: number, m
 export function calculateMonthStats(records: DailyRecordsMap, year: number, month: number): MonthSummaryStats {
   const totalDays = getDaysInMonth(year, month);
   let netPnl = 0;
+  let grossProfit = 0;
+  let grossLoss = 0;
   let winDays = 0;
   let lossDays = 0;
   let bestDay: { date: string; amount: number } | undefined;
@@ -147,12 +149,14 @@ export function calculateMonthStats(records: DailyRecordsMap, year: number, mont
     if (rec && rec.amount > 0) {
       if (rec.type === 'profit') {
         netPnl += rec.amount;
+        grossProfit += rec.amount;
         winDays++;
         if (!bestDay || rec.amount > bestDay.amount) {
           bestDay = { date: key, amount: rec.amount };
         }
       } else {
         netPnl -= rec.amount;
+        grossLoss += rec.amount;
         lossDays++;
         if (!worstDay || rec.amount > worstDay.amount) {
           worstDay = { date: key, amount: rec.amount };
@@ -166,9 +170,12 @@ export function calculateMonthStats(records: DailyRecordsMap, year: number, mont
 
   return {
     monthKey: `${year}-${String(month).padStart(2, '0')}`,
+    monthNumber: month,
     monthName: `${getMonthName(month)} ${year}`,
     monthShort: getMonthShort(month),
     netPnl,
+    grossProfit,
+    grossLoss,
     winDays,
     lossDays,
     totalTradedDays,
@@ -176,4 +183,58 @@ export function calculateMonthStats(records: DailyRecordsMap, year: number, mont
     bestDay,
     worstDay,
   };
+}
+
+export function calculateQuartersForYear(
+  monthStatsList: MonthSummaryStats[],
+  year: number,
+  currentYear: number,
+  currentMonth: number
+): QuarterStats[] {
+  const currentQ = Math.ceil(currentMonth / 3);
+
+  const ranges = [
+    { quarter: 1, label: 'Q1 (Jan-Mar)', months: [1, 2, 3] },
+    { quarter: 2, label: 'Q2 (Apr-Jun)', months: [4, 5, 6] },
+    { quarter: 3, label: 'Q3 (Jul-Sep)', months: [7, 8, 9] },
+    { quarter: 4, label: 'Q4 (Oct-Dec)', months: [10, 11, 12] },
+  ];
+
+  return ranges.map((r) => {
+    let netPnl = 0;
+    let winCount = 0;
+    let lossCount = 0;
+    let winDays = 0;
+    let lossDays = 0;
+    let totalTradedDays = 0;
+
+    r.months.forEach((m) => {
+      const ms = monthStatsList[m - 1];
+      if (ms) {
+        netPnl += ms.netPnl;
+        winDays += ms.winDays;
+        lossDays += ms.lossDays;
+        totalTradedDays += ms.totalTradedDays;
+        if (ms.totalTradedDays > 0) {
+          if (ms.netPnl > 0) winCount++;
+          else if (ms.netPnl < 0) lossCount++;
+        }
+      }
+    });
+
+    const isCurrentQuarter = year === currentYear && r.quarter === currentQ;
+
+    return {
+      quarter: r.quarter,
+      label: r.label,
+      months: r.months,
+      netPnl,
+      winCount,
+      lossCount,
+      winDays,
+      lossDays,
+      totalTradedDays,
+      isCurrentQuarter,
+    };
+  });
 }
