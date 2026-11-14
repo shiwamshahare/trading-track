@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
   AppState,
 } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   useFonts,
   Poppins_400Regular,
@@ -146,8 +146,9 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={globalStyles.safeArea}>
-      <StatusBar style="light" />
+    <SafeAreaProvider>
+      <SafeAreaView style={globalStyles.safeArea} edges={['top', 'left', 'right']}>
+        <StatusBar style="light" />
 
       {/* Security Lock Overlay for Face ID / PIN */}
       {isLocked && <LockScreen onUnlock={() => setIsLocked(false)} />}
@@ -261,6 +262,7 @@ export default function App() {
           </Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
