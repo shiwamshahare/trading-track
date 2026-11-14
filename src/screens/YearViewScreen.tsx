@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { YearViewBrandLogo } from '../components/BrandLogos';
 import { globalStyles } from '../styles/globalStyles';
 import { THEME } from '../styles/theme';
 import { haptic } from '../utils/haptics';
@@ -44,28 +45,31 @@ export const YearViewScreen: React.FC<Props> = ({ records, currency, onSelectMon
       <ScrollView contentContainerStyle={globalStyles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Top Header */}
         <View style={globalStyles.topBarContainer}>
-          <View>
-            <Text style={globalStyles.appSubtitle}>ANNUAL PERFORMANCE</Text>
-            <View style={globalStyles.appTitleRow}>
-              <TouchableOpacity
-                onPress={() => {
-                  haptic.selection();
-                  setSelectedYear((y) => y - 1);
-                }}
-                style={{ padding: 2 }}
-              >
-                <ChevronLeft size={18} color={THEME.colors.textMuted} />
-              </TouchableOpacity>
-              <Text style={globalStyles.appTitle}>{selectedYear} Year-at-a-Glance</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  haptic.selection();
-                  setSelectedYear((y) => y + 1);
-                }}
-                style={{ padding: 2 }}
-              >
-                <ChevronRight size={18} color={THEME.colors.textMuted} />
-              </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <YearViewBrandLogo size={36} />
+            <View>
+              <Text style={globalStyles.appSubtitle}>ANNUAL PERFORMANCE</Text>
+              <View style={globalStyles.appTitleRow}>
+                <TouchableOpacity
+                  onPress={() => {
+                    haptic.selection();
+                    setSelectedYear((y) => y - 1);
+                  }}
+                  style={{ padding: 2 }}
+                >
+                  <ChevronLeft size={18} color={THEME.colors.textMuted} />
+                </TouchableOpacity>
+                <Text style={globalStyles.appTitle}>{selectedYear} Year-at-a-Glance</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    haptic.selection();
+                    setSelectedYear((y) => y + 1);
+                  }}
+                  style={{ padding: 2 }}
+                >
+                  <ChevronRight size={18} color={THEME.colors.textMuted} />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -122,63 +126,70 @@ export const YearViewScreen: React.FC<Props> = ({ records, currency, onSelectMon
           </View>
 
           <View style={globalStyles.yearGrid}>
-            {monthStatsList.map((ms, idx) => {
-              const monthNum = idx + 1;
-              const isCurrentMonth =
-                selectedYear === now.getFullYear() && monthNum === now.getMonth() + 1;
-
-              let tileStyle = globalStyles.monthTileNeutral;
-              let txtColor = THEME.colors.textSubtle;
-              let pnlColor = THEME.colors.textSubtle;
-
-              if (ms.netPnl > 0) {
-                tileStyle = globalStyles.monthTileProfit;
-                txtColor = THEME.colors.textProfitLight;
-                pnlColor = THEME.colors.textProfit;
-              } else if (ms.netPnl < 0) {
-                tileStyle = globalStyles.monthTileLoss;
-                txtColor = THEME.colors.textLossLight;
-                pnlColor = THEME.colors.textLoss;
-              }
-
-              if (isCurrentMonth) {
-                tileStyle = { ...tileStyle, ...globalStyles.monthTileActive };
-              }
-
-              const displayVal =
-                ms.totalTradedDays === 0
-                  ? isCurrentMonth
-                    ? '₹0.0'
-                    : '--'
-                  : formatCompactCurrency(ms.netPnl, currency);
-
-              const subText =
-                ms.totalTradedDays === 0
-                  ? isCurrentMonth
-                    ? 'Active'
-                    : 'No Trades'
-                  : `${ms.winDays}W · ${ms.lossDays}L`;
-
+            {[0, 1, 2, 3].map((rowIdx) => {
+              const rowMonths = monthStatsList.slice(rowIdx * 3, rowIdx * 3 + 3);
               return (
-                <TouchableOpacity
-                  key={monthNum}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    haptic.light();
-                    if (onSelectMonth) onSelectMonth(selectedYear, monthNum);
-                  }}
-                  style={[globalStyles.monthTile, tileStyle]}
-                >
-                  <Text style={[globalStyles.monthName, { color: isCurrentMonth ? THEME.colors.textToday : txtColor }]}>
-                    {ms.monthShort}
-                  </Text>
-                  <Text style={[globalStyles.monthPnl, { color: pnlColor }]}>
-                    {displayVal}
-                  </Text>
-                  <Text style={[globalStyles.monthStats, { color: txtColor }]}>
-                    {subText}
-                  </Text>
-                </TouchableOpacity>
+                <View key={`year-row-${rowIdx}`} style={globalStyles.yearGridRow}>
+                  {rowMonths.map((ms, colIdx) => {
+                    const monthNum = rowIdx * 3 + colIdx + 1;
+                    const isCurrentMonth =
+                      selectedYear === now.getFullYear() && monthNum === now.getMonth() + 1;
+
+                    let tileStyle = globalStyles.monthTileNeutral;
+                    let txtColor = THEME.colors.textSubtle;
+                    let pnlColor = THEME.colors.textSubtle;
+
+                    if (ms.netPnl > 0) {
+                      tileStyle = globalStyles.monthTileProfit;
+                      txtColor = THEME.colors.textProfitLight;
+                      pnlColor = THEME.colors.textProfit;
+                    } else if (ms.netPnl < 0) {
+                      tileStyle = globalStyles.monthTileLoss;
+                      txtColor = THEME.colors.textLossLight;
+                      pnlColor = THEME.colors.textLoss;
+                    }
+
+                    if (isCurrentMonth) {
+                      tileStyle = { ...tileStyle, ...globalStyles.monthTileActive };
+                    }
+
+                    const displayVal =
+                      ms.totalTradedDays === 0
+                        ? isCurrentMonth
+                          ? '₹0.0'
+                          : '--'
+                        : formatCompactCurrency(ms.netPnl, currency);
+
+                    const subText =
+                      ms.totalTradedDays === 0
+                        ? isCurrentMonth
+                          ? 'Active'
+                          : 'No Trades'
+                        : `${ms.winDays}W · ${ms.lossDays}L`;
+
+                    return (
+                      <TouchableOpacity
+                        key={monthNum}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          haptic.light();
+                          if (onSelectMonth) onSelectMonth(selectedYear, monthNum);
+                        }}
+                        style={[globalStyles.monthTile, tileStyle]}
+                      >
+                        <Text style={[globalStyles.monthName, { color: isCurrentMonth ? THEME.colors.textToday : txtColor }]}>
+                          {ms.monthShort}
+                        </Text>
+                        <Text style={[globalStyles.monthPnl, { color: pnlColor }]}>
+                          {displayVal}
+                        </Text>
+                        <Text style={[globalStyles.monthStats, { color: txtColor }]}>
+                          {subText}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               );
             })}
           </View>

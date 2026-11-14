@@ -19,6 +19,7 @@ import { THEME } from '../styles/theme';
 import { CurrencyType, DailyRecordsMap } from '../types';
 import { AuthService } from '../services/authService';
 import { UpdateService, AppUpdateInfo } from '../services/updateService';
+import { SecurityBrandLogo } from '../components/BrandLogos';
 import { haptic } from '../utils/haptics';
 import { BackupModal } from '../components/BackupModal';
 import { DeleteAlertModal } from '../components/DeleteAlertModal';
@@ -137,9 +138,12 @@ export const SettingsScreen: React.FC<Props> = ({
       <ScrollView contentContainerStyle={globalStyles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={globalStyles.topBarContainer}>
-          <View>
-            <Text style={globalStyles.appSubtitle}>PREFERENCES</Text>
-            <Text style={globalStyles.appTitle}>Settings & Security</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <SecurityBrandLogo size={36} />
+            <View>
+              <Text style={globalStyles.appSubtitle}>PREFERENCES</Text>
+              <Text style={globalStyles.appTitle}>Settings & Security</Text>
+            </View>
           </View>
         </View>
 

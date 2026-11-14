@@ -35,6 +35,18 @@ export const DailyBreakdownGrid: React.FC<Props> = ({
   const totalSlots = firstDayOffset + daysInMonth;
   const trailingCount = totalSlots % 7 === 0 ? 0 : 7 - (totalSlots % 7);
 
+  // Group all calendar slots into 7-day week rows to prevent subpixel wrapping
+  const allSlots: (number | null)[] = [
+    ...Array(firstDayOffset).fill(null),
+    ...daysArray,
+    ...Array(trailingCount).fill(null),
+  ];
+
+  const weeks: (number | null)[][] = [];
+  for (let i = 0; i < allSlots.length; i += 7) {
+    weeks.push(allSlots.slice(i, i + 7));
+  }
+
   const now = new Date();
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
   const currentDay = now.getDate();
@@ -64,130 +76,131 @@ export const DailyBreakdownGrid: React.FC<Props> = ({
         })}
       </View>
 
-      {/* Days Grid */}
+      {/* Days Grid - Guaranteed 7 columns per row */}
       <View style={globalStyles.calendarGrid}>
-        {/* Leading Empty Spacer Tiles to align Day 1 under its true Day of Week */}
-        {Array.from({ length: firstDayOffset }, (_, idx) => (
-          <View key={`leading-${idx}`} style={[globalStyles.dayTile, globalStyles.dayTileEmpty]} />
-        ))}
+        {weeks.map((week, weekIdx) => (
+          <View key={`week-${weekIdx}`} style={globalStyles.calendarGridRow}>
+            {week.map((day, colIdx) => {
+              if (day === null) {
+                return (
+                  <View
+                    key={`spacer-${weekIdx}-${colIdx}`}
+                    style={[globalStyles.dayTile, globalStyles.dayTileEmpty]}
+                  />
+                );
+              }
 
-        {/* Month Days */}
-        {daysArray.map((day) => {
-          const dateKey = formatDateKey(year, month, day);
-          const isToday = dateKey === todayDateKey;
-          const rec = records[dateKey];
-          const hasPnl = rec && rec.amount > 0;
-          const dayOfWeek = (firstDayOffset + day - 1) % 7;
-          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-          const isFuture = isCurrentMonth && day > currentDay;
+              const dateKey = formatDateKey(year, month, day);
+              const isToday = dateKey === todayDateKey;
+              const rec = records[dateKey];
+              const hasPnl = rec && rec.amount > 0;
+              const isWeekend = colIdx === 0 || colIdx === 6;
+              const isFuture = isCurrentMonth && day > currentDay;
 
-          // TODAY TILE (Always retains cobalt blue indicator, even when traded)
-          if (isToday) {
-            return (
-              <TouchableOpacity
-                key={day}
-                activeOpacity={0.7}
-                onPress={() => onDayPress(day, rec)}
-                style={[
-                  globalStyles.dayTile,
-                  hasPnl
-                    ? rec.type === 'profit'
-                      ? [globalStyles.dayTileProfit, globalStyles.dayTileTodayActive]
-                      : [globalStyles.dayTileLoss, globalStyles.dayTileTodayActive]
-                    : globalStyles.dayTileToday,
-                ]}
-              >
-                {/* Cobalt blue indicator dot for Today */}
-                {hasPnl && <View style={globalStyles.todayIndicatorDot} />}
+              // TODAY TILE (Always retains cobalt blue indicator, even when traded)
+              if (isToday) {
+                return (
+                  <TouchableOpacity
+                    key={day}
+                    activeOpacity={0.7}
+                    onPress={() => onDayPress(day, rec)}
+                    style={[
+                      globalStyles.dayTile,
+                      hasPnl
+                        ? rec.type === 'profit'
+                          ? [globalStyles.dayTileProfit, globalStyles.dayTileTodayActive]
+                          : [globalStyles.dayTileLoss, globalStyles.dayTileTodayActive]
+                        : globalStyles.dayTileToday,
+                    ]}
+                  >
+                    {/* Cobalt blue indicator dot for Today */}
+                    {hasPnl && <View style={globalStyles.todayIndicatorDot} />}
 
-                <Text
+                    <Text
+                      style={[
+                        globalStyles.dayNumber,
+                        hasPnl
+                          ? rec.type === 'profit'
+                            ? globalStyles.dayNumberProfit
+                            : globalStyles.dayNumberLoss
+                          : globalStyles.dayNumberToday,
+                      ]}
+                    >
+                      {day}
+                    </Text>
+                    <Text
+                      style={[
+                        globalStyles.dayAmount,
+                        hasPnl
+                          ? rec.type === 'profit'
+                            ? globalStyles.dayAmountProfit
+                            : globalStyles.dayAmountLoss
+                          : globalStyles.dayAmountToday,
+                      ]}
+                    >
+                      {hasPnl ? formatTileCurrency(rec.amount, currency, rec.type) : 'Today'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }
+
+              // TRADED DAY TILE (Profit or Loss)
+              if (hasPnl) {
+                const isProfit = rec.type === 'profit';
+                return (
+                  <TouchableOpacity
+                    key={day}
+                    activeOpacity={0.7}
+                    onPress={() => onDayPress(day, rec)}
+                    style={[
+                      globalStyles.dayTile,
+                      isProfit ? globalStyles.dayTileProfit : globalStyles.dayTileLoss,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        globalStyles.dayNumber,
+                        isProfit ? globalStyles.dayNumberProfit : globalStyles.dayNumberLoss,
+                      ]}
+                    >
+                      {day}
+                    </Text>
+                    <Text
+                      style={[
+                        globalStyles.dayAmount,
+                        isProfit ? globalStyles.dayAmountProfit : globalStyles.dayAmountLoss,
+                      ]}
+                    >
+                      {formatTileCurrency(rec.amount, currency, rec.type)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }
+
+              // NEUTRAL / NON-TRADED DAY TILE
+              return (
+                <TouchableOpacity
+                  key={day}
+                  activeOpacity={0.7}
+                  onPress={() => onDayPress(day, undefined)}
                   style={[
-                    globalStyles.dayNumber,
-                    hasPnl
-                      ? rec.type === 'profit'
-                        ? globalStyles.dayNumberProfit
-                        : globalStyles.dayNumberLoss
-                      : globalStyles.dayNumberToday,
+                    globalStyles.dayTile,
+                    isWeekend ? globalStyles.dayTileWeekend : globalStyles.dayTileNeutral,
+                    isFuture && globalStyles.dayTileFuture,
                   ]}
                 >
-                  {day}
-                </Text>
-                <Text
-                  style={[
-                    globalStyles.dayAmount,
-                    hasPnl
-                      ? rec.type === 'profit'
-                        ? globalStyles.dayAmountProfit
-                        : globalStyles.dayAmountLoss
-                      : globalStyles.dayAmountToday,
-                  ]}
-                >
-                  {hasPnl ? formatTileCurrency(rec.amount, currency, rec.type) : 'Today'}
-                </Text>
-              </TouchableOpacity>
-            );
-          }
-
-          // TRADED DAY TILE (Profit or Loss)
-          if (hasPnl) {
-            const isProfit = rec.type === 'profit';
-            return (
-              <TouchableOpacity
-                key={day}
-                activeOpacity={0.7}
-                onPress={() => onDayPress(day, rec)}
-                style={[
-                  globalStyles.dayTile,
-                  isProfit ? globalStyles.dayTileProfit : globalStyles.dayTileLoss,
-                ]}
-              >
-                <Text
-                  style={[
-                    globalStyles.dayNumber,
-                    isProfit ? globalStyles.dayNumberProfit : globalStyles.dayNumberLoss,
-                  ]}
-                >
-                  {day}
-                </Text>
-                <Text
-                  style={[
-                    globalStyles.dayAmount,
-                    isProfit ? globalStyles.dayAmountProfit : globalStyles.dayAmountLoss,
-                  ]}
-                >
-                  {formatTileCurrency(rec.amount, currency, rec.type)}
-                </Text>
-              </TouchableOpacity>
-            );
-          }
-
-          // NEUTRAL / NON-TRADED DAY TILE
-          return (
-            <TouchableOpacity
-              key={day}
-              activeOpacity={0.7}
-              onPress={() => onDayPress(day, undefined)}
-              style={[
-                globalStyles.dayTile,
-                isWeekend ? globalStyles.dayTileWeekend : globalStyles.dayTileNeutral,
-                isFuture && globalStyles.dayTileFuture,
-              ]}
-            >
-              <Text
-                style={[
-                  globalStyles.dayNumber,
-                  isWeekend ? globalStyles.dayNumberWeekend : globalStyles.dayNumberNeutral,
-                ]}
-              >
-                {day}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-
-        {/* Trailing Empty Spacer Tiles to complete 7-column grid rectangle */}
-        {Array.from({ length: trailingCount }, (_, idx) => (
-          <View key={`trailing-${idx}`} style={[globalStyles.dayTile, globalStyles.dayTileEmpty]} />
+                  <Text
+                    style={[
+                      globalStyles.dayNumber,
+                      isWeekend ? globalStyles.dayNumberWeekend : globalStyles.dayNumberNeutral,
+                    ]}
+                  >
+                    {day}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         ))}
       </View>
     </View>

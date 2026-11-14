@@ -18,6 +18,7 @@ import { StorageService } from '../services/storageService';
 import { AutoBackupService, AutoBackupMeta } from '../services/autoBackupService';
 import { haptic } from '../utils/haptics';
 import { CurrencyType } from '../types';
+import { BackupBrandLogo } from './BrandLogos';
 
 interface Props {
   visible: boolean;
@@ -146,9 +147,12 @@ export const BackupModal: React.FC<Props> = ({
               <View style={globalStyles.sheetDragHandle} />
 
               <View style={globalStyles.sheetHeader}>
-                <View>
-                  <Text style={globalStyles.sheetSubtitle}>LOCAL STORAGE ENGINE</Text>
-                  <Text style={globalStyles.sheetDateTitle}>Backup & Auto-Refetch</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <BackupBrandLogo size={36} />
+                  <View>
+                    <Text style={globalStyles.sheetSubtitle}>LOCAL STORAGE ENGINE</Text>
+                    <Text style={globalStyles.sheetDateTitle}>Backup & Auto-Refetch</Text>
+                  </View>
                 </View>
                 <TouchableOpacity onPress={onClose} style={globalStyles.closeBtn}>
                   <X size={16} color={THEME.colors.textSubtle} />

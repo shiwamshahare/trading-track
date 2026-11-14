@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { DashboardBrandLogo } from '../components/BrandLogos';
 import { globalStyles } from '../styles/globalStyles';
 import { THEME } from '../styles/theme';
 import { haptic } from '../utils/haptics';
@@ -108,22 +109,23 @@ export const DashboardScreen: React.FC<Props> = ({
       <ScrollView contentContainerStyle={globalStyles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Top App Bar */}
         <View style={globalStyles.topBarContainer}>
-          <View>
-            <Text style={globalStyles.appSubtitle}>TRADING TRACK</Text>
-            <View style={globalStyles.appTitleRow}>
-              <TouchableOpacity onPress={handlePrevMonth} style={{ padding: 2 }}>
-                <ChevronLeft size={18} color={THEME.colors.textMuted} />
-              </TouchableOpacity>
-              <Text style={globalStyles.appTitle}>
-                {getMonthName(selectedMonth)} {selectedYear}
-              </Text>
-              <TouchableOpacity onPress={handleNextMonth} style={{ padding: 2 }}>
-                <ChevronRight size={18} color={THEME.colors.textMuted} />
-              </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <DashboardBrandLogo size={36} />
+            <View>
+              <Text style={globalStyles.appSubtitle}>TRADING TRACK</Text>
+              <View style={globalStyles.appTitleRow}>
+                <TouchableOpacity onPress={handlePrevMonth} style={{ padding: 2 }}>
+                  <ChevronLeft size={18} color={THEME.colors.textMuted} />
+                </TouchableOpacity>
+                <Text style={globalStyles.appTitle}>
+                  {getMonthName(selectedMonth)} {selectedYear}
+                </Text>
+                <TouchableOpacity onPress={handleNextMonth} style={{ padding: 2 }}>
+                  <ChevronRight size={18} color={THEME.colors.textMuted} />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-
-          
         </View>
 
         {/* 3 Metrics Cards */}

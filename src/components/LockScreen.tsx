@@ -6,7 +6,8 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { Lock, ScanFace, Delete } from 'lucide-react-native';
+import { ScanFace, Delete } from 'lucide-react-native';
+import { LockScreenHeroLogo } from './BrandLogos';
 import { THEME } from '../styles/theme';
 import { AuthService } from '../services/authService';
 import { haptic } from '../utils/haptics';
@@ -88,10 +89,10 @@ export const LockScreen: React.FC<Props> = ({ onUnlock }) => {
 
   return (
     <View style={styles.container}>
-      {/* Lock Icon Banner */}
+      {/* Hero Brand Security Logo */}
       <View style={styles.header}>
-        <View style={styles.iconCircle}>
-          <Lock size={32} color={THEME.colors.primaryBlueLight} />
+        <View style={{ marginBottom: 12 }}>
+          <LockScreenHeroLogo size={68} />
         </View>
         <Text style={styles.title}>Trading Track Locked</Text>
         <Text style={styles.subtitle}>

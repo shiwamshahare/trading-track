@@ -1,7 +1,5 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { THEME } from './theme';
-
-const { width } = Dimensions.get('window');
 
 export const globalStyles = StyleSheet.create({
   // Root Layout
@@ -197,7 +195,7 @@ export const globalStyles = StyleSheet.create({
     marginBottom: 8,
   },
   calendarDayHeader: {
-    width: (width - 32 - 28 - 36) / 7,
+    flex: 1,
     textAlign: 'center',
     fontFamily: THEME.fonts.semiBold,
     fontSize: 11,
@@ -207,12 +205,14 @@ export const globalStyles = StyleSheet.create({
     color: '#52525b',
   },
   calendarGrid: {
+    gap: 6,
+  },
+  calendarGridRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 6,
   },
   dayTile: {
-    width: (width - 32 - 28 - 36) / 7, // Responsive 7-column fit
+    flex: 1,
     height: 64,
     borderRadius: THEME.radius.md,
     borderWidth: 1,
@@ -299,13 +299,15 @@ export const globalStyles = StyleSheet.create({
 
   // 12-Month Year View Grid
   yearGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
     marginTop: 6,
   },
+  yearGridRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   monthTile: {
-    width: (width - 32 - 28 - 16) / 3, // 3 columns
+    flex: 1,
     height: 98,
     borderRadius: THEME.radius.lg,
     borderWidth: 1,
