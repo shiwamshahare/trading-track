@@ -8,7 +8,10 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.shiwamshahare.tradingtrack"
+      "bundleIdentifier": "com.shiwamshahare.tradingtrack",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Use Face ID to secure your trading journal and financial records."
+      }
     },
     "android": {
       "package": "com.shiwamshahare.tradingtrack",

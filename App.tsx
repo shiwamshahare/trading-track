@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   SafeAreaView,
   View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
+  AppState,
 } from 'react-native';
 import {
   useFonts,
@@ -19,10 +20,12 @@ import { globalStyles } from './src/styles/globalStyles';
 import { THEME } from './src/styles/theme';
 import { DailyRecordsMap, DailyTradeRecord, ActiveTab, CurrencyType } from './src/types';
 import { StorageService } from './src/services/storageService';
+import { AuthService } from './src/services/authService';
 import { haptic } from './src/utils/haptics';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { YearViewScreen } from './src/screens/YearViewScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { LockScreen } from './src/components/LockScreen';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -36,14 +39,20 @@ export default function App() {
   const [records, setRecords] = useState<DailyRecordsMap>({});
   const [currency, setCurrency] = useState<CurrencyType>('₹');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState<boolean>(true);
+  const appState = useRef(AppState.currentState);
 
-  // Initialize storage & subscribe to auto-refetch
+  // Initialize storage, lock & subscribe to auto-refetch
   useEffect(() => {
     async function init() {
       const initial = await StorageService.loadAllRecords();
       setRecords(initial);
       const curr = await StorageService.getCurrency();
       setCurrency(curr);
+
+      // Check if security lock is enabled on opening (cold start)
+      const secEnabled = await AuthService.isSecurityEnabled();
+      setIsLocked(secEnabled);
     }
     init();
 
@@ -52,7 +61,21 @@ export default function App() {
       setRecords({ ...updated });
     });
 
-    return () => unsubscribe();
+    // Reopening listener: locks app whenever returning from background
+    const appStateSub = AppState.addEventListener('change', async (nextState) => {
+      if (appState.current && appState.current.match(/inactive|background/) && nextState === 'active') {
+        const secEnabled = await AuthService.isSecurityEnabled();
+        if (secEnabled) {
+          setIsLocked(true);
+        }
+      }
+      appState.current = nextState;
+    });
+
+    return () => {
+      unsubscribe();
+      appStateSub.remove();
+    };
   }, []);
 
   const showToast = (msg: string) => {
@@ -100,6 +123,9 @@ export default function App() {
   return (
     <SafeAreaView style={globalStyles.safeArea}>
       <StatusBar style="light" />
+
+      {/* Security Lock Overlay for Face ID / PIN */}
+      {isLocked && <LockScreen onUnlock={() => setIsLocked(false)} />}
 
       {/* Toast Notification */}
       {toastMessage && (

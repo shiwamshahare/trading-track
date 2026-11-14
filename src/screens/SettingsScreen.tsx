@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { Database, ShieldCheck, RefreshCw, Trash2, Sliders } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Switch, TextInput, Modal } from 'react-native';
+import { Database, ShieldCheck, RefreshCw, Trash2, Sliders, Lock, X, Check } from 'lucide-react-native';
 import { globalStyles } from '../styles/globalStyles';
 import { THEME } from '../styles/theme';
-import { haptic } from '../utils/haptics';
 import { CurrencyType, DailyRecordsMap } from '../types';
+import { AuthService } from '../services/authService';
+import { haptic } from '../utils/haptics';
 import { BackupModal } from '../components/BackupModal';
 import { DeleteAlertModal } from '../components/DeleteAlertModal';
 
@@ -32,8 +33,41 @@ export const SettingsScreen: React.FC<Props> = ({
 }) => {
   const [isBackupModalVisible, setIsBackupModalVisible] = useState(false);
   const [isResetConfirmVisible, setIsResetConfirmVisible] = useState(false);
+  const [isSecurityEnabled, setIsSecurityEnabled] = useState(true);
+  const [isPinModalVisible, setIsPinModalVisible] = useState(false);
+  const [newPinInput, setNewPinInput] = useState('');
+  const [hasBiometrics, setHasBiometrics] = useState(true);
 
   const totalDays = Object.keys(records).length;
+
+  useEffect(() => {
+    async function loadSecurity() {
+      const enabled = await AuthService.isSecurityEnabled();
+      setIsSecurityEnabled(enabled);
+      const bioSupport = await AuthService.checkBiometricsSupport();
+      setHasBiometrics(bioSupport.hasHardware);
+    }
+    loadSecurity();
+  }, []);
+
+  const handleToggleSecurity = async (val: boolean) => {
+    haptic.selection();
+    setIsSecurityEnabled(val);
+    await AuthService.setSecurityEnabled(val);
+    onShowToast(val ? '✓ App Security (Face ID / PIN) enabled' : '⚠️ App Security disabled');
+  };
+
+  const handleSavePin = async () => {
+    if (newPinInput.length !== 4 || isNaN(Number(newPinInput))) {
+      alert('PIN must be exactly 4 digits');
+      return;
+    }
+    haptic.success();
+    await AuthService.setPin(newPinInput);
+    setIsPinModalVisible(false);
+    setNewPinInput('');
+    onShowToast('✓ 4-digit PIN updated successfully!');
+  };
 
   return (
     <View style={globalStyles.rootContainer}>
@@ -42,8 +76,68 @@ export const SettingsScreen: React.FC<Props> = ({
         <View style={globalStyles.topBarContainer}>
           <View>
             <Text style={globalStyles.appSubtitle}>PREFERENCES</Text>
-            <Text style={globalStyles.appTitle}>Settings & Local Storage</Text>
+            <Text style={globalStyles.appTitle}>Settings & Security</Text>
           </View>
+        </View>
+
+        {/* Security & Face ID / PIN Section */}
+        <View style={globalStyles.cardSection}>
+          <View style={globalStyles.cardSectionHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Lock size={16} color={THEME.colors.primaryBlueLight} />
+              <Text style={globalStyles.sectionTitle}>App Lock (Face ID & PIN)</Text>
+            </View>
+            <Switch
+              value={isSecurityEnabled}
+              onValueChange={handleToggleSecurity}
+              trackColor={{ false: '#26262a', true: THEME.colors.primaryBlue }}
+              thumbColor={isSecurityEnabled ? '#ffffff' : '#71717a'}
+            />
+          </View>
+
+          <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11, color: THEME.colors.textSubtle, marginBottom: 10 }}>
+            Prompt for Face ID or 4-digit PIN whenever the app is opened or brought back to the foreground.
+          </Text>
+
+          <View style={{ backgroundColor: '#121214', borderRadius: THEME.radius.md, padding: 12, gap: 8 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11.5, color: THEME.colors.textSubtle }}>Status:</Text>
+              <Text style={{ fontFamily: THEME.fonts.bold, fontSize: 11.5, color: isSecurityEnabled ? THEME.colors.textProfit : THEME.colors.textLoss }}>
+                {isSecurityEnabled ? 'Protected (On Open & Reopen)' : 'Disabled'}
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11.5, color: THEME.colors.textSubtle }}>Biometrics:</Text>
+              <Text style={{ fontFamily: THEME.fonts.medium, fontSize: 11.5, color: hasBiometrics ? THEME.colors.textToday : THEME.colors.textMuted }}>
+                {hasBiometrics ? 'Face ID / Fingerprint Ready' : 'In-App PIN Mode'}
+              </Text>
+            </View>
+          </View>
+
+          {isSecurityEnabled && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                haptic.light();
+                setNewPinInput('');
+                setIsPinModalVisible(true);
+              }}
+              style={{
+                marginTop: 10,
+                backgroundColor: THEME.colors.tileNeutral,
+                borderWidth: 1,
+                borderColor: THEME.colors.tileNeutralBorder,
+                paddingVertical: 10,
+                borderRadius: THEME.radius.md,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontFamily: THEME.fonts.semiBold, fontSize: 12, color: THEME.colors.textWhite }}>
+                🔑 Change 4-Digit In-App PIN
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Currency Denomination */}
@@ -223,6 +317,55 @@ export const SettingsScreen: React.FC<Props> = ({
         }}
         onCancel={() => setIsResetConfirmVisible(false)}
       />
+
+      {/* Change PIN Modal */}
+      <Modal visible={isPinModalVisible} transparent animationType="fade" onRequestClose={() => setIsPinModalVisible(false)}>
+        <View style={[globalStyles.modalBackdrop, { justifyContent: 'center', paddingHorizontal: 24 }]}>
+          <View style={{ backgroundColor: '#1a1a1d', borderRadius: THEME.radius.xl, padding: 20, borderWidth: 1, borderColor: '#333338' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <Text style={{ fontFamily: THEME.fonts.bold, fontSize: 16, color: THEME.colors.textWhite }}>
+                Set 4-Digit In-App PIN
+              </Text>
+              <TouchableOpacity onPress={() => setIsPinModalVisible(false)} style={globalStyles.closeBtn}>
+                <X size={16} color={THEME.colors.textSubtle} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11.5, color: THEME.colors.textMuted, marginBottom: 12 }}>
+              Enter a new 4-digit numeric code to unlock your journal:
+            </Text>
+
+            <TextInput
+              style={[globalStyles.numericInput, { textAlign: 'center', letterSpacing: 8, fontSize: 24, backgroundColor: '#121214', borderRadius: THEME.radius.md, borderWidth: 1.5, borderColor: THEME.colors.primaryBlue, marginBottom: 16 }]}
+              placeholder="••••"
+              placeholderTextColor={THEME.colors.textSubtle}
+              keyboardType="numeric"
+              maxLength={4}
+              secureTextEntry
+              value={newPinInput}
+              onChangeText={setNewPinInput}
+              autoFocus
+            />
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => setIsPinModalVisible(false)}
+                style={{ flex: 1, backgroundColor: '#26262b', paddingVertical: 12, borderRadius: THEME.radius.md, alignItems: 'center' }}
+              >
+                <Text style={{ fontFamily: THEME.fonts.medium, fontSize: 12.5, color: THEME.colors.textWhite }}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleSavePin}
+                style={{ flex: 1, backgroundColor: THEME.colors.primaryBlue, paddingVertical: 12, borderRadius: THEME.radius.md, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+              >
+                <Check size={16} color={THEME.colors.textWhite} />
+                <Text style={{ fontFamily: THEME.fonts.bold, fontSize: 12.5, color: THEME.colors.textWhite }}>Save PIN</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
