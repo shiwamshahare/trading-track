@@ -1,10 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Switch, TextInput, Modal } from 'react-native';
-import { Database, ShieldCheck, RefreshCw, Trash2, Sliders, Lock, X, Check } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, ScrollView, Switch, TextInput, Modal, ActivityIndicator } from 'react-native';
+import {
+  Database,
+  ShieldCheck,
+  RefreshCw,
+  Trash2,
+  Sliders,
+  Lock,
+  X,
+  Check,
+  CloudDownload,
+  CloudCheck,
+  Sparkles,
+  Radio,
+} from 'lucide-react-native';
 import { globalStyles } from '../styles/globalStyles';
 import { THEME } from '../styles/theme';
 import { CurrencyType, DailyRecordsMap } from '../types';
 import { AuthService } from '../services/authService';
+import { UpdateService, AppUpdateInfo } from '../services/updateService';
 import { haptic } from '../utils/haptics';
 import { BackupModal } from '../components/BackupModal';
 import { DeleteAlertModal } from '../components/DeleteAlertModal';
@@ -38,6 +52,13 @@ export const SettingsScreen: React.FC<Props> = ({
   const [newPinInput, setNewPinInput] = useState('');
   const [hasBiometrics, setHasBiometrics] = useState(true);
 
+  // Over-The-Air (OTA) Updates State
+  const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo>(() => UpdateService.getUpdateInfo());
+  const [updateStatus, setUpdateStatus] = useState<
+    'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'up_to_date' | 'disabled'
+  >('idle');
+  const [updateMessage, setUpdateMessage] = useState<string>('');
+
   const totalDays = Object.keys(records).length;
 
   useEffect(() => {
@@ -46,6 +67,7 @@ export const SettingsScreen: React.FC<Props> = ({
       setIsSecurityEnabled(enabled);
       const bioSupport = await AuthService.checkBiometricsSupport();
       setHasBiometrics(bioSupport.hasHardware);
+      setUpdateInfo(UpdateService.getUpdateInfo());
     }
     loadSecurity();
   }, []);
@@ -55,6 +77,47 @@ export const SettingsScreen: React.FC<Props> = ({
     setIsSecurityEnabled(val);
     await AuthService.setSecurityEnabled(val);
     onShowToast(val ? '✓ App Security (Face ID / PIN) enabled' : '⚠️ App Security disabled');
+  };
+
+  const handleCheckUpdate = async () => {
+    haptic.selection();
+    setUpdateStatus('checking');
+    setUpdateMessage('Querying EAS Update servers...');
+
+    const res = await UpdateService.checkForUpdate();
+    if (res.hasUpdate) {
+      haptic.success();
+      setUpdateStatus('available');
+      setUpdateMessage('New over-the-air update is available from EAS!');
+      onShowToast('✨ New update available to download.');
+    } else {
+      haptic.light();
+      setUpdateStatus('up_to_date');
+      setUpdateMessage(res.reason || 'Your app is on the latest version.');
+    }
+  };
+
+  const handleDownloadUpdate = async () => {
+    haptic.medium();
+    setUpdateStatus('downloading');
+    setUpdateMessage('Downloading new update bundle over-the-air...');
+
+    const res = await UpdateService.fetchUpdate();
+    if (res.success) {
+      haptic.success();
+      setUpdateStatus('ready');
+      setUpdateMessage('Update downloaded! Restart now to run the new version.');
+      onShowToast('✓ Update downloaded successfully.');
+    } else {
+      haptic.warning();
+      setUpdateStatus('idle');
+      setUpdateMessage(`Download failed: ${res.error || 'Unknown error'}`);
+    }
+  };
+
+  const handleReload = async () => {
+    haptic.heavy();
+    await UpdateService.reloadApp();
   };
 
   const handleSavePin = async () => {
@@ -187,6 +250,173 @@ export const SettingsScreen: React.FC<Props> = ({
               );
             })}
           </View>
+        </View>
+
+        {/* Over-The-Air (OTA) Updates Section */}
+        <View style={globalStyles.cardSection}>
+          <View style={globalStyles.cardSectionHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Sparkles size={16} color={THEME.colors.primaryBlueLight} />
+              <Text style={globalStyles.sectionTitle}>Over-The-Air (OTA) Updates</Text>
+            </View>
+            <View style={{ backgroundColor: '#13243D', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, borderWidth: 1, borderColor: '#3b82f6' }}>
+              <Text style={{ fontFamily: THEME.fonts.bold, fontSize: 10, color: THEME.colors.textToday }}>EAS UPDATE</Text>
+            </View>
+          </View>
+
+          <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11, color: THEME.colors.textSubtle, marginBottom: 10 }}>
+            Receive instant bug fixes and features over Wi-Fi/cellular without reinstalling the APK.
+          </Text>
+
+          <View style={{ backgroundColor: '#121214', borderRadius: THEME.radius.md, padding: 12, gap: 8, marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11.5, color: THEME.colors.textSubtle }}>Channel:</Text>
+              <Text style={{ fontFamily: THEME.fonts.semiBold, fontSize: 11.5, color: THEME.colors.textToday }}>
+                {updateInfo.channel}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11.5, color: THEME.colors.textSubtle }}>Runtime Version:</Text>
+              <Text style={{ fontFamily: THEME.fonts.semiBold, fontSize: 11.5, color: THEME.colors.textWhite }}>
+                {updateInfo.runtimeVersion} (appVersion)
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11.5, color: THEME.colors.textSubtle }}>Active Bundle:</Text>
+              <Text style={{ fontFamily: THEME.fonts.medium, fontSize: 11, color: THEME.colors.textProfit }}>
+                {updateInfo.isEmbeddedLaunch ? 'Embedded App Binary' : `OTA: ${updateInfo.updateId}`}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11.5, color: THEME.colors.textSubtle }}>OTA Engine:</Text>
+              <Text style={{ fontFamily: THEME.fonts.semiBold, fontSize: 11.5, color: updateInfo.isEnabled ? THEME.colors.textProfit : THEME.colors.primaryBlueLight }}>
+                {updateInfo.isEnabled ? 'Active & Ready' : 'Development Build Mode'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Status Alert */}
+          {updateMessage ? (
+            <View
+              style={{
+                backgroundColor:
+                  updateStatus === 'available' || updateStatus === 'ready'
+                    ? THEME.colors.tileProfit
+                    : THEME.colors.tileNeutral,
+                borderWidth: 1,
+                borderColor:
+                  updateStatus === 'available' || updateStatus === 'ready'
+                    ? THEME.colors.tileProfitBorder
+                    : THEME.colors.tileNeutralBorder,
+                borderRadius: THEME.radius.md,
+                padding: 10,
+                marginBottom: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              {updateStatus === 'ready' || updateStatus === 'up_to_date' ? (
+                <CloudCheck size={16} color={THEME.colors.textProfit} />
+              ) : updateStatus === 'available' ? (
+                <Sparkles size={16} color={THEME.colors.textProfit} />
+              ) : (
+                <Radio size={16} color={THEME.colors.textToday} />
+              )}
+              <Text
+                style={{
+                  fontFamily: THEME.fonts.medium,
+                  fontSize: 11,
+                  color:
+                    updateStatus === 'available' || updateStatus === 'ready'
+                      ? THEME.colors.textProfitLight
+                      : THEME.colors.textMuted,
+                  flex: 1,
+                }}
+              >
+                {updateMessage}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Action Trigger Buttons */}
+          {updateStatus === 'ready' ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleReload}
+              style={{
+                backgroundColor: THEME.colors.successGreen,
+                paddingVertical: 12,
+                borderRadius: THEME.radius.md,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              <RefreshCw size={16} color="#ffffff" />
+              <Text style={{ fontFamily: THEME.fonts.bold, fontSize: 13, color: '#ffffff' }}>
+                Restart App to Apply Update
+              </Text>
+            </TouchableOpacity>
+          ) : updateStatus === 'available' ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleDownloadUpdate}
+              style={{
+                backgroundColor: THEME.colors.primaryBlue,
+                paddingVertical: 12,
+                borderRadius: THEME.radius.md,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              <CloudDownload size={16} color="#ffffff" />
+              <Text style={{ fontFamily: THEME.fonts.bold, fontSize: 13, color: '#ffffff' }}>
+                Download & Install Update
+              </Text>
+            </TouchableOpacity>
+          ) : updateStatus === 'checking' || updateStatus === 'downloading' ? (
+            <View
+              style={{
+                backgroundColor: THEME.colors.tileNeutral,
+                paddingVertical: 12,
+                borderRadius: THEME.radius.md,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              <ActivityIndicator size="small" color={THEME.colors.primaryBlueLight} />
+              <Text style={{ fontFamily: THEME.fonts.medium, fontSize: 12.5, color: THEME.colors.textMuted }}>
+                {updateStatus === 'checking' ? 'Checking for updates...' : 'Downloading OTA bundle...'}
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleCheckUpdate}
+              style={{
+                backgroundColor: THEME.colors.tileNeutral,
+                borderWidth: 1,
+                borderColor: THEME.colors.tileNeutralBorder,
+                paddingVertical: 12,
+                borderRadius: THEME.radius.md,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              <RefreshCw size={15} color={THEME.colors.textToday} />
+              <Text style={{ fontFamily: THEME.fonts.semiBold, fontSize: 12.5, color: THEME.colors.textWhite }}>
+                Check for OTA Updates
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Local Storage Diagnostics Card */}

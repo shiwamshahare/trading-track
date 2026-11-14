@@ -22,6 +22,7 @@ import { DailyRecordsMap, DailyTradeRecord, ActiveTab, CurrencyType } from './sr
 import { StorageService } from './src/services/storageService';
 import { AuthService } from './src/services/authService';
 import { AutoBackupService } from './src/services/autoBackupService';
+import { UpdateService } from './src/services/updateService';
 import { haptic } from './src/utils/haptics';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { YearViewScreen } from './src/screens/YearViewScreen';
@@ -61,6 +62,11 @@ export default function App() {
       // Check if security lock is enabled on opening (cold start)
       const secEnabled = await AuthService.isSecurityEnabled();
       setIsLocked(secEnabled);
+
+      // Check for Over-The-Air updates in the background
+      UpdateService.checkInBackground(() => {
+        showToast('✨ An over-the-air update is ready to apply!');
+      });
     }
     init();
 
@@ -88,6 +94,11 @@ export default function App() {
         if (autoMeta && autoMeta.status === 'success') {
           showToast(`✓ 2:00 AM auto-backup updated master file.`);
         }
+
+        // Check for updates in background on resume
+        UpdateService.checkInBackground(() => {
+          showToast('✨ An over-the-air update is ready to apply!');
+        });
       }
       appState.current = nextState;
     });

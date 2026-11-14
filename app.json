@@ -35,6 +35,12 @@
         "projectId": "087d3a33-3833-4322-a069-d87078ebe4dc"
       }
     },
-    "owner": "shiwamshahare"
+    "owner": "shiwamshahare",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/087d3a33-3833-4322-a069-d87078ebe4dc"
+    }
   }
 }
