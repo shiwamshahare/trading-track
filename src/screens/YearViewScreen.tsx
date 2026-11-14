@@ -125,6 +125,24 @@ export const YearViewScreen: React.FC<Props> = ({
     }
   };
 
+  const handlePrevYear = () => {
+    haptic.selection();
+    setSelectedYear((y) => y - 1);
+    if (onShowToast) {
+      onShowToast(`📅 Switched to ${selectedYear - 1}`);
+    }
+  };
+
+  const handleNextYear = () => {
+    haptic.selection();
+    setSelectedYear((y) => y + 1);
+    if (onShowToast) {
+      onShowToast(`📅 Switched to ${selectedYear + 1}`);
+    }
+  };
+
+  const isCurrentYear = selectedYear === currentYear;
+
   return (
     <View style={globalStyles.rootContainer}>
       <ScrollView contentContainerStyle={globalStyles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -134,81 +152,138 @@ export const YearViewScreen: React.FC<Props> = ({
             <YearViewBrandLogo size={36} />
             <View>
               <Text style={globalStyles.appSubtitle}>ANNUAL PERFORMANCE</Text>
-              <View style={globalStyles.appTitleRow}>
-                <TouchableOpacity
-                  onPress={() => {
-                    haptic.selection();
-                    setSelectedYear((y) => y - 1);
-                  }}
-                  style={{ padding: 2 }}
-                >
-                  <ChevronLeft size={18} color={THEME.colors.textMuted} />
-                </TouchableOpacity>
-
-                <Text style={globalStyles.appTitle}>{selectedYear} Overview</Text>
-
-                <TouchableOpacity
-                  onPress={() => {
-                    haptic.selection();
-                    setSelectedYear((y) => y + 1);
-                  }}
-                  style={{ padding: 2 }}
-                >
-                  <ChevronRight size={18} color={THEME.colors.textMuted} />
-                </TouchableOpacity>
-
-                {/* Quick return to current year if viewing another year */}
-                {selectedYear !== currentYear && (
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      haptic.selection();
-                      setSelectedYear(currentYear);
-                    }}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 3,
-                      paddingHorizontal: 7,
-                      paddingVertical: 3,
-                      backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                      borderColor: THEME.colors.tileTodayBorder,
-                      borderWidth: 1,
-                      borderRadius: THEME.radius.full,
-                      marginLeft: 4,
-                    }}
-                  >
-                    <RotateCcw size={10} color={THEME.colors.textToday} />
-                    <Text style={{ fontFamily: THEME.fonts.medium, fontSize: 10, color: THEME.colors.textToday }}>
-                      {currentYear}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              <Text style={{ fontFamily: THEME.fonts.semiBold, fontSize: 13, color: THEME.colors.textWhite }}>
+                12-Month Analytics
+              </Text>
             </View>
           </View>
 
-          {/* YTD Net P&L Badge */}
-          <View
-            style={{
-              backgroundColor: ytdPnl > 0 ? 'rgba(5, 150, 105, 0.2)' : ytdPnl < 0 ? 'rgba(220, 38, 38, 0.2)' : '#18181b',
-              borderColor: ytdPnl > 0 ? 'rgba(5, 150, 105, 0.45)' : ytdPnl < 0 ? 'rgba(220, 38, 38, 0.45)' : '#27272a',
-              borderWidth: 1,
-              paddingHorizontal: 11,
-              paddingVertical: 7,
-              borderRadius: THEME.radius.md,
-            }}
-          >
-            <Text
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {!isCurrentYear && (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  haptic.selection();
+                  setSelectedYear(currentYear);
+                  if (onShowToast) {
+                    onShowToast(`Returned to current year ${currentYear}`);
+                  }
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: THEME.colors.tileToday,
+                  borderColor: THEME.colors.tileTodayBorder,
+                  borderWidth: 1.5,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: THEME.radius.full,
+                }}
+              >
+                <RotateCcw size={11} color={THEME.colors.textToday} />
+                <Text style={{ fontFamily: THEME.fonts.bold, fontSize: 10.5, color: THEME.colors.textToday }}>
+                  {currentYear}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* YTD Net P&L Badge */}
+            <View
               style={{
-                fontFamily: THEME.fonts.bold,
-                fontSize: 12,
-                color: ytdPnl > 0 ? THEME.colors.textProfit : ytdPnl < 0 ? THEME.colors.textLoss : THEME.colors.textSubtle,
+                backgroundColor:
+                  ytdPnl > 0
+                    ? 'rgba(5, 150, 105, 0.2)'
+                    : ytdPnl < 0
+                    ? 'rgba(220, 38, 38, 0.2)'
+                    : '#18181b',
+                borderColor:
+                  ytdPnl > 0
+                    ? 'rgba(5, 150, 105, 0.45)'
+                    : ytdPnl < 0
+                    ? 'rgba(220, 38, 38, 0.45)'
+                    : '#27272a',
+                borderWidth: 1,
+                paddingHorizontal: 11,
+                paddingVertical: 7,
+                borderRadius: THEME.radius.md,
               }}
             >
-              YTD: {formatCompactCurrency(ytdPnl, currency)}
-            </Text>
+              <Text
+                style={{
+                  fontFamily: THEME.fonts.bold,
+                  fontSize: 12,
+                  color:
+                    ytdPnl > 0
+                      ? THEME.colors.textProfit
+                      : ytdPnl < 0
+                      ? THEME.colors.textLoss
+                      : THEME.colors.textSubtle,
+                }}
+              >
+                YTD: {formatCompactCurrency(ytdPnl, currency)}
+              </Text>
+            </View>
           </View>
+        </View>
+
+        {/* Prominent High-Visibility Year Switcher Card */}
+        <View style={globalStyles.monthSwitcherCard}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handlePrevYear}
+            style={globalStyles.monthArrowBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <ChevronLeft size={24} color={THEME.colors.textWhite} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              if (!isCurrentYear) {
+                haptic.selection();
+                setSelectedYear(currentYear);
+                if (onShowToast) {
+                  onShowToast(`Returned to current year ${currentYear}`);
+                }
+              }
+            }}
+            style={globalStyles.monthDisplayCenter}
+          >
+            <Text style={globalStyles.monthDisplayTitle}>
+              {selectedYear}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+              <View
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: 3.5,
+                  backgroundColor: isCurrentYear ? THEME.colors.textProfit : THEME.colors.textToday,
+                }}
+              />
+              <Text
+                style={[
+                  globalStyles.monthDisplaySub,
+                  isCurrentYear
+                    ? { color: THEME.colors.textProfit }
+                    : { color: THEME.colors.textToday },
+                ]}
+              >
+                {isCurrentYear ? 'CURRENT TRADING YEAR' : 'TAP TO RETURN'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleNextYear}
+            style={globalStyles.monthArrowBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <ChevronRight size={24} color={THEME.colors.textWhite} />
+          </TouchableOpacity>
         </View>
 
         {/* 4 Executive KPI Cards (2x2 Grid) */}
