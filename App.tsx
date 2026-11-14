@@ -21,6 +21,7 @@ import { THEME } from './src/styles/theme';
 import { DailyRecordsMap, DailyTradeRecord, ActiveTab, CurrencyType } from './src/types';
 import { StorageService } from './src/services/storageService';
 import { AuthService } from './src/services/authService';
+import { AutoBackupService } from './src/services/autoBackupService';
 import { haptic } from './src/utils/haptics';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { YearViewScreen } from './src/screens/YearViewScreen';
@@ -42,6 +43,13 @@ export default function App() {
   const [isLocked, setIsLocked] = useState<boolean>(true);
   const appState = useRef(AppState.currentState);
 
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  };
+
   // Initialize storage, lock & subscribe to auto-refetch
   useEffect(() => {
     async function init() {
@@ -61,12 +69,24 @@ export default function App() {
       setRecords({ ...updated });
     });
 
-    // Reopening listener: locks app whenever returning from background
+    // Everyday at 2:00 AM local time auto-backup scheduler (updates master file directly)
+    const cancelAutoBackup = AutoBackupService.initAutoBackupScheduler((meta) => {
+      if (meta.status === 'success') {
+        showToast(`✓ Auto-backup updated master file (${meta.totalRecordsBackedUp} days).`);
+      }
+    });
+
+    // Reopening listener: locks app and catches up 2:00 AM auto-backup if missed
     const appStateSub = AppState.addEventListener('change', async (nextState) => {
       if (appState.current && appState.current.match(/inactive|background/) && nextState === 'active') {
         const secEnabled = await AuthService.isSecurityEnabled();
         if (secEnabled) {
           setIsLocked(true);
+        }
+        // Catch-up auto-backup if 2:00 AM occurred while app was in background
+        const autoMeta = await AutoBackupService.checkAndTriggerAutoBackup();
+        if (autoMeta && autoMeta.status === 'success') {
+          showToast(`✓ 2:00 AM auto-backup updated master file.`);
         }
       }
       appState.current = nextState;
@@ -74,16 +94,10 @@ export default function App() {
 
     return () => {
       unsubscribe();
+      cancelAutoBackup();
       appStateSub.remove();
     };
   }, []);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3500);
-  };
 
   const handleSaveRecord = async (record: DailyTradeRecord) => {
     await StorageService.saveRecord(record);

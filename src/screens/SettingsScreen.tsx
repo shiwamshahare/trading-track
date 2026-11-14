@@ -217,7 +217,11 @@ export const SettingsScreen: React.FC<Props> = ({
               <Text style={{ fontFamily: THEME.fonts.semiBold, fontSize: 11.5, color: THEME.colors.textWhite }}>{totalDays} Sessions</Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11.5, color: THEME.colors.textSubtle }}>History Auto-Refetch:</Text>
+              <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11.5, color: THEME.colors.textSubtle }}>Auto-Backup Schedule:</Text>
+              <Text style={{ fontFamily: THEME.fonts.semiBold, fontSize: 11.5, color: THEME.colors.textToday }}>Everyday at 2:00 AM</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontFamily: THEME.fonts.regular, fontSize: 11.5, color: THEME.colors.textSubtle }}>Auto-Refetch Engine:</Text>
               <Text style={{ fontFamily: THEME.fonts.semiBold, fontSize: 11.5, color: THEME.colors.textProfit }}>Active & Subscribed</Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
