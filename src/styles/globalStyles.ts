@@ -193,16 +193,18 @@ export const globalStyles = StyleSheet.create({
   // Daily Breakdown Calendar (User's Exact Reference Component)
   calendarHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 2,
+    gap: 6,
     marginBottom: 8,
   },
   calendarDayHeader: {
-    flex: 1,
+    width: (width - 32 - 28 - 36) / 7,
     textAlign: 'center',
     fontFamily: THEME.fonts.semiBold,
     fontSize: 11,
     color: THEME.colors.textSubtle,
+  },
+  calendarDayHeaderWeekend: {
+    color: '#52525b',
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -217,10 +219,23 @@ export const globalStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 4,
+    position: 'relative',
+  },
+  dayTileEmpty: {
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+    borderWidth: 1,
   },
   dayTileNeutral: {
     backgroundColor: THEME.colors.tileNeutral,
     borderColor: THEME.colors.tileNeutralBorder,
+  },
+  dayTileWeekend: {
+    backgroundColor: '#1b1b1e',
+    borderColor: '#242428',
+  },
+  dayTileFuture: {
+    opacity: 0.38,
   },
   dayTileProfit: {
     backgroundColor: THEME.colors.tileProfit,
@@ -233,7 +248,20 @@ export const globalStyles = StyleSheet.create({
   dayTileToday: {
     backgroundColor: THEME.colors.tileToday,
     borderColor: THEME.colors.tileTodayBorder,
-    borderWidth: 1.8,
+    borderWidth: 2,
+  },
+  dayTileTodayActive: {
+    borderWidth: 2,
+    borderColor: THEME.colors.tileTodayBorder,
+  },
+  todayIndicatorDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: THEME.colors.primaryBlueLight,
+    position: 'absolute',
+    top: 4,
+    right: 5,
   },
   dayNumber: {
     fontFamily: THEME.fonts.bold,
@@ -241,6 +269,9 @@ export const globalStyles = StyleSheet.create({
   },
   dayNumberNeutral: {
     color: THEME.colors.textMuted,
+  },
+  dayNumberWeekend: {
+    color: '#63636b',
   },
   dayNumberProfit: {
     color: THEME.colors.textProfitLight,

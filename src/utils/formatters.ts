@@ -30,23 +30,28 @@ export function formatCompactCurrency(amount: number, currency: CurrencyType = '
   return `${sign}${currency}${formatted}`;
 }
 
-export function formatTileCurrency(amount: number, currency: CurrencyType = '₹'): string {
+export function formatTileCurrency(
+  amount: number,
+  currency: CurrencyType = '₹',
+  type?: 'profit' | 'loss'
+): string {
   if (!amount) return `${currency}0.0`;
   const abs = Math.abs(amount);
+  const prefix = type === 'loss' ? '-' : '';
 
   if (currency === '₹') {
     if (abs >= 100000) {
-      return `${currency}${(abs / 100000).toFixed(1).replace('.0', '')}L`;
+      return `${prefix}${currency}${(abs / 100000).toFixed(1).replace('.0', '')}L`;
     }
     if (abs >= 1000) {
-      return `${currency}${(abs / 1000).toFixed(1).replace('.0', '')}K`;
+      return `${prefix}${currency}${(abs / 1000).toFixed(1).replace('.0', '')}K`;
     }
-    return `${currency}${abs}`;
+    return `${prefix}${currency}${abs}`;
   } else {
     if (abs >= 1000) {
-      return `${currency}${(abs / 1000).toFixed(1).replace('.0', '')}K`;
+      return `${prefix}${currency}${(abs / 1000).toFixed(1).replace('.0', '')}K`;
     }
-    return `${currency}${abs}`;
+    return `${prefix}${currency}${abs}`;
   }
 }
 

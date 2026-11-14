@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { ChevronLeft, ChevronRight, Plus, Database } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { globalStyles } from '../styles/globalStyles';
 import { THEME } from '../styles/theme';
 import { haptic } from '../utils/haptics';
@@ -76,7 +76,8 @@ export const DashboardScreen: React.FC<Props> = ({
   const todayPnl = todayRecord ? (todayRecord.type === 'profit' ? todayRecord.amount : -todayRecord.amount) : 0;
   const todayCount = todayRecord ? 1 : 0;
 
-  const weeks = calculateWeeksForMonth(records, selectedYear, selectedMonth, now.getDate());
+  const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth() + 1;
+  const weeks = calculateWeeksForMonth(records, selectedYear, selectedMonth, isCurrentMonth ? now.getDate() : -1);
   const currentWeek = weeks.find((w) => w.isCurrentWeek) || weeks[0] || { netPnl: 0, winCount: 0, lossCount: 0 };
   const monthStats = calculateMonthStats(records, selectedYear, selectedMonth);
 
@@ -90,13 +91,6 @@ export const DashboardScreen: React.FC<Props> = ({
     } else {
       setIsLogModalVisible(true);
     }
-  };
-
-  const handleLogTodayPress = () => {
-    haptic.light();
-    setActiveDay(now.getDate());
-    setActiveRecord(records[todayDateKey]);
-    setIsLogModalVisible(true);
   };
 
   const handleConfirmDelete = () => {
@@ -129,28 +123,7 @@ export const DashboardScreen: React.FC<Props> = ({
             </View>
           </View>
 
-          <View style={globalStyles.topActionsRow}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => {
-                haptic.light();
-                setIsBackupModalVisible(true);
-              }}
-              style={globalStyles.backupBtn}
-            >
-              <Database size={13} color={THEME.colors.textWhite} />
-              <Text style={globalStyles.backupBtnText}>Backup</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={handleLogTodayPress}
-              style={globalStyles.logTodayBtn}
-            >
-              <Plus size={14} color={THEME.colors.textProfit} />
-              <Text style={globalStyles.logTodayBtnText}>Log Today</Text>
-            </TouchableOpacity>
-          </View>
+          
         </View>
 
         {/* 3 Metrics Cards */}
